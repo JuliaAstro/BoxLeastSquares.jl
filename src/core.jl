@@ -53,7 +53,7 @@ function default_maximum_period(t, minimum_n_transit)
     return (hi - lo) / (minimum_n_transit - 1)
 end
 
-function bls(t, y, yerr;
+function BLS(t, y, yerr;
                duration,
                objective=:likelihood,
                oversample=10,

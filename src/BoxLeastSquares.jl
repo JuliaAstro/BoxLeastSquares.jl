@@ -2,7 +2,7 @@ module BoxLeastSquares
 
 using Statistics
 
-export bls, autoperiod, power, period
+export BLS, autoperiod, power, period
 
 include("core.jl")
 
