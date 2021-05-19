@@ -1,0 +1,7 @@
+name = "BoxLeastSquares"
+uuid = "6c353534-c22b-44cc-9076-7b904de9fadc"
+authors = ["Miles Lucas <mdlucas@hawaii.edu> and contributors"]
+version = "0.1.0"
+
+[compat]
+julia = "1.3"
