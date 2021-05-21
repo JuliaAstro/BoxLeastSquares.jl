@@ -53,7 +53,7 @@ function autoperiod(t,
     if maximum_period < minimum_period
         minimum_period, maximum_period = maximum_period, minimum_period
     end
-    minimum_period ≥ 0 || error("minimum period must be positive")
+    minimum_period ≥ zero(minimum_period) || error("minimum period must be positive")
 
     minimum_frequency = inv(maximum_period)
     maximum_frequency = inv(minimum_period)
@@ -79,17 +79,17 @@ function BLS(t, y, yerr;
     min_t = minimum(t)
 
     # set up arrays
-    powers = similar(period, float(eltype(period)))
+    powers = similar(period, Float64)
     durations = similar(period, typeof(duration))
     t0s = similar(period)
 
-    for (idx, P) in pairs(period)
-        best = -Inf
+    @inbounds for (idx, P) in pairs(period)
+        best = (power=-Inf, duration=zero(P), t0=zero(P))
         half_P = 0.5 * P
         for τ in duration
             # compute phase grid
             dp = τ / oversample
-            phase = 0:dp:P
+            phase = zero(P):dp:P
 
             for t0 in phase
                 # find in-transit data points
@@ -120,14 +120,11 @@ function BLS(t, y, yerr;
                     depth = y_out - y_in
                     depth_err = sqrt(inv(invvar_in) + inv(invvar_out))
                     snr = depth / depth_err
-                    if snr > best
-                        best = snr
-                        powers[idx] = snr
-                        durations[idx] = τ
-                        t0s[idx] = t0
+                    if snr > best.power
+                        best = (power=snr, duration=τ, t0=t0)
                     end
                 elseif objective === :likelihood
-                    loglike = 0.0
+                    loglike = zero(y_in)
                     for i in eachindex(t)
                         transiting = abs((t[i] - min_t - t0 + half_P) % P - half_P) < 0.5 * τ
                         transiting || continue
@@ -135,17 +132,17 @@ function BLS(t, y, yerr;
                         loglike -= (y_res[i] - y_out)^2 * invvar[i]
                     end
                     loglike *= -0.5
-                    if loglike > best
-                        best = loglike
-                        powers[idx] = loglike
-                        durations[idx] = τ
-                        t0s[idx] = t0
+                    if loglike > best.power
+                        best = (power=loglike, duration=τ, t0=t0)
                     end
                 else
                     error("invalid objective $objective. Should be one of `:snr` or `:likelihood`")
                 end
             end
         end
+        powers[idx] = best.power
+        durations[idx] = best.duration
+        t0s[idx] = best.t0 + min_t
     end
     return BLSPeriodogram(t, y, yerr, period, powers, durations, t0s, objective)
 end
