@@ -1,25 +1,31 @@
 
 
-struct BLSPeriodogram{TT,VT<:AbstractVector{TT},YT<:AbstractVector,ET<:AbstractVector}
+struct BLSPeriodogram{TT,VT<:AbstractVector{TT},YT<:AbstractVector,ET<:AbstractVector,PT,PWT,DT,TOT}
     t::VT
     y::YT
     err::ET
-    period
-    duration
-    power
+    period::PT
+    power::PWT
+    duration::DT
+    t0::TOT
     method::Symbol
 end
 
 period(bls::BLSPeriodogram) = bls.period
 duration(bls::BLSPeriodogram) = bls.duration
 power(bls::BLSPeriodogram) = bls.power
+t0(bls::BLSPeriodogram) = bls.t0
 
 function Base.show(io::IO, ::MIME"text/plain", bls::BLSPeriodogram)
     best_ind = argmax(power(bls))
     best_pow = power(bls)[best_ind]
     best_per = period(bls)[best_ind]
+    best_dur = duration(bls)[best_ind]
+    best_t0 = t0(bls)[best_ind]
     method = string(bls.method)
-    print(io, "BLSPeriodogram\n", "best period: ", best_per, "\n$method at best period: ", best_pow)
+    n = length(bls.t)
+    m = length(bls.power)
+    print(io, "BLSPeriodogram\n==============\ninput dim: ", n, "\noutput dim: ", m, "\n\nparameters\n----------\n", "period: ", best_per, "\nduration: ", best_dur, "\nt0: ", best_t0, "\n$method: ", best_pow)
 end
 
 
@@ -42,7 +48,7 @@ function autoperiod(t,
     minimum_frequency = inv(maximum_period)
     maximum_frequency = inv(minimum_period)
 
-    nf = (maximum_frequency - minimum_frequency) ÷ df
+    nf = 1 + (maximum_frequency - minimum_frequency) ÷ df
     return @. inv(maximum_frequency - df * (0:nf))
 end
 
@@ -57,23 +63,19 @@ function BLS(t, y, yerr;
                duration,
                objective=:likelihood,
                oversample=10,
-               minimum_n_transit=3,
-               minimum_period=default_minimum_period(duration),
-               maximum_period=default_maximum_period(t, minimum_n_transit),
-               frequency_factor=1.0,
-               period=autoperiod(t,
-                                 duration;
-                                 minimum_n_transit=minimum_n_transit,
-                                 minimum_period=minimum_period,
-                                 maximum_period=maximum_period,
-                                 frequency_factor=frequency_factor))
+               period=autoperiod(t, duration;))
     invvar = @. inv(yerr^2)
     y_res = y .- median(y)
+    min_t = minimum(t)
 
-    power = map(period) do P
+    # set up arrays
+    powers = similar(period, float(eltype(period)))
+    durations = similar(period, typeof(duration))
+    t0s = similar(period)
+
+    for (idx, P) in pairs(period)
         best = -Inf
         half_P = 0.5 * P
-        min_t = minimum(t)
         for τ in duration
             # compute phase grid
             dp = τ / oversample
@@ -81,31 +83,59 @@ function BLS(t, y, yerr;
 
             for t0 in phase
                 # find in-transit data points
-                mask = @. abs((t - min_t - t0 + half_P) % P - half_P) < 0.5 * τ
-                imask = .!mask
+                invvar_in = invvar_out = zero(eltype(invvar))
+                y_in = y_out = zero(eltype(y_res))
+                for i in eachindex(t)
+                    transiting = abs((t[i] - min_t - t0 + half_P) % P - half_P) < 0.5 * τ
+                    if transiting
+                        invvar_in += invvar[i]
+                        y_in += y_res[i] * invvar[i]
+                    else
+                        invvar_out += invvar[i]
+                        y_out += y_res[i] * invvar[i]
+                    end
+                end
+                y_in /= invvar_in
+                y_out /= invvar_out
 
-                # estimate in-transit flux
-                invvar_in = sum(invvar[mask])
-                y_in = mapreduce(*, +, y[mask], invvar[mask]) / invvar_in
-                # estimate out-of-transit flux
-                invvar_out = sum(invvar[imask])
-                y_out = mapreduce(*, +, y[imask], invvar[imask]) / invvar_out
+                # # estimate in-transit flux
+                # invvar_in = sum(invvar[mask])
+                # y_in = mapreduce(*, +, y_res[mask], invvar[mask]) / invvar_in
+                # # estimate out-of-transit flux
+                # invvar_out = sum(invvar[imask])
+                # y_out = mapreduce(*, +, y_res[imask], invvar[imask]) / invvar_out
 
                 # compute best-fit depth
                 if objective === :snr
                     depth = y_out - y_in
                     depth_err = sqrt(inv(invvar_in) + inv(invvar_out))
                     snr = depth / depth_err
-                    best = max(best, snr)
+                    if snr > best
+                        best = snr
+                        powers[idx] = snr
+                        durations[idx] = τ
+                        t0s[idx] = t0
+                    end
                 elseif objective === :likelihood
-                    loglike = -0.5 * mapreduce((y,iv) -> ((y - y_in)^2 - (y - y_out)^2) * iv, +, y[mask], invvar[mask])
-                    best = max(best, loglike)
+                    loglike = 0.0
+                    for i in eachindex(t)
+                        transiting = abs((t[i] - min_t - t0 + half_P) % P - half_P) < 0.5 * τ
+                        transiting || continue
+                        loglike += (y_res[i] - y_in)^2 * invvar[i]
+                        loglike -= (y_res[i] - y_out)^2 * invvar[i]
+                    end
+                    loglike *= -0.5
+                    if loglike > best
+                        best = loglike
+                        powers[idx] = loglike
+                        durations[idx] = τ
+                        t0s[idx] = t0
+                    end
                 else
                     error("invalid objective $objective. Should be one of `:snr` or `:likelihood`")
                 end
             end
         end
-        return best
     end
-    return BLSPeriodogram(t, y, yerr, period, duration, power, objective)
+    return BLSPeriodogram(t, y, yerr, period, powers, durations, t0s, objective)
 end
