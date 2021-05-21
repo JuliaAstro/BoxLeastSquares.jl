@@ -73,7 +73,7 @@ function BLS(t, y, yerr;
                duration,
                objective=:likelihood,
                oversample=10,
-               period=autoperiod(t, duration;))
+               period=autoperiod(t, duration))
     invvar = @. inv(yerr^2)
     y_res = y .- median(y)
     min_t = minimum(t)
@@ -83,7 +83,8 @@ function BLS(t, y, yerr;
     durations = similar(period, typeof(duration))
     t0s = similar(period)
 
-    @inbounds for (idx, P) in pairs(period)
+    @inbounds Threads.@threads for idx in eachindex(period)
+        P = period[idx]
         best = (power=-Inf, duration=zero(P), t0=zero(P))
         half_P = 0.5 * P
         for τ in duration
@@ -108,13 +109,6 @@ function BLS(t, y, yerr;
                 y_in /= invvar_in
                 y_out /= invvar_out
 
-                # # estimate in-transit flux
-                # invvar_in = sum(invvar[mask])
-                # y_in = mapreduce(*, +, y_res[mask], invvar[mask]) / invvar_in
-                # # estimate out-of-transit flux
-                # invvar_out = sum(invvar[imask])
-                # y_out = mapreduce(*, +, y_res[imask], invvar[imask]) / invvar_out
-
                 # compute best-fit depth
                 if objective === :snr
                     depth = y_out - y_in
@@ -124,14 +118,7 @@ function BLS(t, y, yerr;
                         best = (power=snr, duration=τ, t0=t0)
                     end
                 elseif objective === :likelihood
-                    loglike = zero(y_in)
-                    for i in eachindex(t)
-                        transiting = abs((t[i] - min_t - t0 + half_P) % P - half_P) < 0.5 * τ
-                        transiting || continue
-                        loglike += (y_res[i] - y_in)^2 * invvar[i]
-                        loglike -= (y_res[i] - y_out)^2 * invvar[i]
-                    end
-                    loglike *= -0.5
+                    loglike = 0.5 * invvar_in * (y_out - y_in)^2
                     if loglike > best.power
                         best = (power=loglike, duration=τ, t0=t0)
                     end
