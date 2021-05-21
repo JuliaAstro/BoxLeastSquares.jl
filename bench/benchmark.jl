@@ -1,5 +1,6 @@
 using BenchmarkTools
 using BoxLeastSquares
+using BoxLeastSquares: period, power
 using PyCall
 using Random
 
