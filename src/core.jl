@@ -16,16 +16,26 @@ duration(bls::BLSPeriodogram) = bls.duration
 power(bls::BLSPeriodogram) = bls.power
 t0(bls::BLSPeriodogram) = bls.t0
 
-function Base.show(io::IO, ::MIME"text/plain", bls::BLSPeriodogram)
+"""
+    params(::BLSPeriodogram)
+
+Return the transit parameters for the best fitting period. Returns period, duration, t0, and power.
+"""
+function params(bls::BLSPeriodogram)
     best_ind = argmax(power(bls))
     best_pow = power(bls)[best_ind]
     best_per = period(bls)[best_ind]
     best_dur = duration(bls)[best_ind]
     best_t0 = t0(bls)[best_ind]
+    return (power=best_pow, period=best_per, duration=best_dur, t0=best_t0)
+end
+
+function Base.show(io::IO, ::MIME"text/plain", bls::BLSPeriodogram)
+    p = params(bls)
     method = string(bls.method)
     n = length(bls.t)
     m = length(bls.power)
-    print(io, "BLSPeriodogram\n==============\ninput dim: ", n, "\noutput dim: ", m, "\n\nparameters\n----------\n", "period: ", best_per, "\nduration: ", best_dur, "\nt0: ", best_t0, "\n$method: ", best_pow)
+    print(io, "BLSPeriodogram\n==============\ninput dim: ", n, "\noutput dim: ", m, "\n\nparameters\n----------\n", "period: ", p.period, "\nduration: ", p.duration, "\nt0: ", p.t0, "\n$method: ", p.power)
 end
 
 
