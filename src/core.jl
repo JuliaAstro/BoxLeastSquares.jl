@@ -98,7 +98,7 @@ function BLS(t, y, yerr;
     bin_duration = min_τ / oversample
     max_bins = ceil(Int, max_P / bin_duration) + oversample
     # work arrays
-    mean_y = similar(y, max_bins + 1)
+    mean_y = similar(y, typeof(inv(first(y))), max_bins + 1)
     mean_ivar = similar(yerr, typeof(inv(first(yerr)^2)), max_bins + 1)
 
     # pre-accumulate some factors
@@ -250,4 +250,38 @@ function BLS_slow(t, y, yerr;
         t0s[idx] = best.t0 + min_t
     end
     return BLSPeriodogram(t, y, yerr, period, duration, powers, durations, t0s, objective)
+end
+
+
+function model(bls::BLSPeriodogram)
+    # compute depth
+    pars = params(bls)
+    return model(bls.t, bls.y, bls.err; pars...)
+end
+
+function model(t, y, yerr; period, duration, t0, kwargs...)
+    # compute depth
+    hp = 0.5 * period
+    y_in = y_out = zero(typeof(inv(first(y))))
+    ivar_in = ivar_out = zero(typeof(inv(first(yerr)^2)))
+    for idx in eachindex(t, y, yerr)
+        transiting = abs((t[idx] - t0 + hp) % period - hp) < 0.5 * duration
+        iv = inv(yerr[idx]^2)
+        χ = y[idx] * iv
+        if transiting
+            y_in += χ
+            ivar_in += iv
+        else
+            y_out += χ
+            ivar_out += iv
+        end
+    end
+    y_in /= ivar_in
+    y_out /= ivar_out
+    T = eltype(y)
+    y_model = map(t) do t
+        transiting = abs((t - t0 + hp) % period - hp) < 0.5 * duration
+        convert(T, ifelse(transiting, y_in, y_out))
+    end
+    return y_model
 end
