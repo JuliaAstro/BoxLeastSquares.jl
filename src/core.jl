@@ -1,21 +1,24 @@
 
 
-struct BLSPeriodogram{TT,VT<:AbstractVector{TT},YT<:AbstractVector,ET<:AbstractVector,PT,DIT,PWT,DT,TOT}
-    t::VT
-    y::YT
-    err::ET
+struct BLSPeriodogram{TT,FT,FET,PT,DT,VTT<:AbstractVector{TT},VFT<:AbstractVector{FT},VFET<:AbstractVector{FET},T1,T2,T3,T4,T5,T6}
+    t::VTT
+    y::VFT
+    err::VFET
     period::PT
-    duration_in::DIT
-    power::PWT
-    duration::DT
-    t0::TOT
+    duration_in::DT
     method::Symbol
+
+    power::T1
+    duration::T2
+    t0::T3
+    depth::T4
+    snr::T5
+    loglike::T6
 end
 
 period(bls::BLSPeriodogram) = bls.period
-duration(bls::BLSPeriodogram) = bls.duration
+duration(bls::BLSPeriodogram) = bls.duration_in
 power(bls::BLSPeriodogram) = bls.power
-t0(bls::BLSPeriodogram) = bls.t0
 
 """
     params(::BLSPeriodogram)
@@ -23,12 +26,23 @@ t0(bls::BLSPeriodogram) = bls.t0
 Return the transit parameters for the best fitting period. Returns period, duration, t0, and power.
 """
 function params(bls::BLSPeriodogram)
-    best_ind = argmax(power(bls))
-    best_pow = power(bls)[best_ind]
-    best_per = period(bls)[best_ind]
-    best_dur = duration(bls)[best_ind]
-    best_t0 = t0(bls)[best_ind]
-    return (power=best_pow, period=best_per, duration=best_dur, t0=best_t0)
+    ind = argmax(power(bls))
+    pow = power(bls)[ind]
+    per = period(bls)[ind]
+    dur = bls.duration[ind]
+    t0 = bls.t0[ind]
+    depth = bls.depth[ind]
+    snr = bls.snr[ind]
+    depth_err = depth / snr
+    loglike = bls.loglike[ind]
+    return (power=pow, period=per, duration=dur, t0=t0,
+            depth=depth, depth_err=depth_err, snr=snr, loglike=loglike)
+end
+
+function Base.show(io::IO, bls::BLSPeriodogram{T,S}) where {T,S}
+    n = length(bls.t)
+    m = length(bls.power)
+    print(io, "BLSPeriodogram{$T,$S}(input_dim=$n, output_dim=$m)")
 end
 
 function Base.show(io::IO, ::MIME"text/plain", bls::BLSPeriodogram)
@@ -41,11 +55,14 @@ function Base.show(io::IO, ::MIME"text/plain", bls::BLSPeriodogram)
     println(io, "output dim: ", m)
     println(io, "period range: ", range_str(extrema(bls.period)))
     println(io, "duration range: ", range_str(extrema(bls.duration_in)))
+    println(io, "objective: $method")
     println(io, "\nparameters\n----------")
     println(io, "period: ", p.period)
     println(io, "duration: ", p.duration)
     println(io, "t0: ", p.t0)
-    print(io, "$method: ", p.power)
+    println(io, "depth: ", p.depth, " ± ", p.depth_err)
+    println(io, "snr: ", p.snr)
+    print(io, "log-likelihood: ", p.loglike)
 end
 
 range_str((min, max)) = "$min - $max"
@@ -91,6 +108,9 @@ function BLS(t, y, yerr;
     powers = similar(period, Float64)
     durations = similar(period, eltype(duration))
     t0s = similar(period)
+    depths = similar(powers, eltype(y)) 
+    snrs = similar(powers)
+    loglikes = similar(powers)
 
     # find parameter ranges
     max_P = maximum(period)
@@ -143,7 +163,7 @@ function BLS(t, y, yerr;
         end
 
         # now, loop over phases
-        best = (power=-Inf, duration=zero(P), t0=zero(P))
+        best = -Inf
         for k in 0:length(duration) - 1
             τ = round(Int, duration[begin + k] / bin_duration)
             n_max = n_bins - τ
@@ -162,96 +182,33 @@ function BLS(t, y, yerr;
                 y_out /= ivar_out
 
                 # compute best-fit depth
+                depth = y_out - y_in
+                depth_err = sqrt(inv(ivar_in) + inv(ivar_out))
+                snr = depth / depth_err
+                loglike = 0.5 * ivar_in * (y_out - y_in)^2
+
                 if objective === :snr
-                    depth = y_out - y_in
-                    depth_err = sqrt(inv(ivar_in) + inv(ivar_out))
-                    power = depth / depth_err
+                    power = snr
                 elseif objective === :likelihood
-                    power = 0.5 * ivar_in * (y_out - y_in)^2
+                    power = loglike
                 else
                     error("invalid objective $objective. Should be one of `:snr` or `:likelihood`")
                 end
 
-                if power > best.power
-                    dur = τ * bin_duration
-                    t0 = mod(n * bin_duration + 0.5 * dur, P)
-                    best = (power=power, duration=dur, t0=t0)
+                if power > best
+                    best = power
+                    powers[idx] = power
+                    durations[idx] = τ * bin_duration
+                    t0s[idx] = mod(n * bin_duration + 0.5 * durations[idx], P) + min_t
+                    depths[idx] = depth
+                    snrs[idx] = snr
+                    loglikes[idx] = loglike
                 end
             end
         end
-        powers[idx] = best.power
-        durations[idx] = best.duration
-        t0s[idx] = best.t0 + min_t
     end
-    return BLSPeriodogram(t, y, yerr, period, duration, powers, durations, t0s, objective)
+    return BLSPeriodogram(t, y, yerr, period, duration, objective, powers, durations, t0s, depths, snrs, loglikes)
 end
-
-
-function BLS_slow(t, y, yerr;
-    duration,
-    objective=:likelihood,
-    oversample=10,
-    period=autoperiod(t, duration))
-    invvar = @. inv(yerr^2)
-    y_res = y .- median(y)
-    min_t = minimum(t)
-
-    # set up arrays
-    powers = similar(period, Float64)
-    durations = similar(period, eltype(duration))
-    t0s = similar(period)
-
-    @inbounds for idx in eachindex(period)
-        P = period[idx]
-        best = (power=-Inf, duration=zero(P), t0=zero(P))
-        half_P = 0.5 * P
-        for τ in duration
-            # compute phase grid
-            dp = τ / oversample
-            phase = zero(P):dp:P
-
-            for t0 in phase
-                # find in-transit data points
-                invvar_in = invvar_out = zero(eltype(invvar))
-                y_in = y_out = zero(eltype(y_res))
-                for i in eachindex(t)
-                    transiting = abs((t[i] - min_t - t0 + half_P) % P - half_P) < 0.5 * τ
-                    if transiting
-                        invvar_in += invvar[i]
-                        y_in += y_res[i] * invvar[i]
-                    else
-                        invvar_out += invvar[i]
-                        y_out += y_res[i] * invvar[i]
-                    end
-                end
-                y_in /= invvar_in
-                y_out /= invvar_out
-
-                # compute best-fit depth
-                if objective === :snr
-                    depth = y_out - y_in
-                    depth_err = sqrt(inv(invvar_in) + inv(invvar_out))
-                    snr = depth / depth_err
-                    if snr > best.power
-                        best = (power=snr, duration=τ, t0=t0)
-                    end
-                elseif objective === :likelihood
-                    loglike = 0.5 * invvar_in * (y_out - y_in)^2
-                    if loglike > best.power
-                        best = (power=loglike, duration=τ, t0=t0)
-                    end
-                else
-                    error("invalid objective $objective. Should be one of `:snr` or `:likelihood`")
-                end
-            end
-        end
-        powers[idx] = best.power
-        durations[idx] = best.duration
-        t0s[idx] = best.t0 + min_t
-    end
-    return BLSPeriodogram(t, y, yerr, period, duration, powers, durations, t0s, objective)
-end
-
 
 function model(bls::BLSPeriodogram)
     # compute depth
