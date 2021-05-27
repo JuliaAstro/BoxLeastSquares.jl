@@ -40,22 +40,18 @@ function params(bls::BLSPeriodogram)
 end
 
 function Base.show(io::IO, bls::BLSPeriodogram{T,S}) where {T,S}
-    n = length(bls.t)
-    m = length(bls.power)
-    print(io, "BLSPeriodogram{$T,$S}(input_dim=$n, output_dim=$m)")
+    N = length(bls.power)
+    print(io, "$N-element BLSPeriodogram{$T,$S}")
 end
 
 function Base.show(io::IO, ::MIME"text/plain", bls::BLSPeriodogram)
     p = params(bls)
-    method = string(bls.method)
-    n = length(bls.t)
-    m = length(bls.power)
     println(io, "BLSPeriodogram\n==============")
-    println(io, "input dim: ", n)
-    println(io, "output dim: ", m)
+    println(io, "input dim: ", length(bls.t))
+    println(io, "output dim: ", length(bls.power))
     println(io, "period range: ", range_str(extrema(bls.period)))
     println(io, "duration range: ", range_str(extrema(bls.duration_in)))
-    println(io, "objective: $method")
+    println(io, "objective: ", bls.method)
     println(io, "\nparameters\n----------")
     println(io, "period: ", p.period)
     println(io, "duration: ", p.duration)
