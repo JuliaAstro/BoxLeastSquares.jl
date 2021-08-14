@@ -21,13 +21,18 @@ t, y, yerr = gendata(1000)
 function periodogram_astropy(t, y, yerr)
     model = apt.BoxLeastSquares(t, y, dy=yerr)
     periodogram = model.autopower(0.2)
-    return periodogram["period"], periodogram["power"]
+    return model, periodogram
 end
 
 function periodogram_boxleastsquares(t, y, yerr)
     periodogram = BLS(t, y, yerr; duration=0.2)
-    return period(periodogram), power(periodogram)
+    return periodogram
 end
 
-@benchmark periodogram_astropy($t, $y, $yerr)
-@benchmark periodogram_boxleastsquares($t, $y, $yerr)
+bench_py = @benchmark periodogram_astropy($t, $y, $yerr)
+bench_jl = @benchmark periodogram_boxleastsquares($t, $y, $yerr)
+
+println("astropy.timeseries")
+print(bench_py)
+println("\nBoxLeastSquares.jl")
+println(bench_jl)
