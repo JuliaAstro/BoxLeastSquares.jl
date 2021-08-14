@@ -10,5 +10,7 @@ include("bls.jl")
 include("model.jl")
 # pretty printing
 include("printing.jl")
+# plotting recipes
+include("plotting.jl")
 
 end
