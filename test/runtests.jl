@@ -1,6 +1,10 @@
 using BoxLeastSquares
+using Distributions
+using StableRNGs
 using Test
 
+rng = StableRNG(8462852)
+
 @testset "BoxLeastSquares.jl" begin
-    # Write your tests here.
+    include("bls.jl")
 end

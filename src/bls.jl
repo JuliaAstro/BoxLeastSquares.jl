@@ -94,22 +94,22 @@ end
 
 @inline wrap(x, period) = x - period * floor(x / period)
 
-function BLS(t, y, yerr;
+function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
     duration,
     objective=:likelihood,
     oversample=10,
-    period=autoperiod(t, duration))
+    periods=autoperiod(t, duration))
 
     # set up arrays
-    powers = similar(period, float(eltype(y)))
-    durations = similar(period, eltype(duration))
-    t0s = similar(period)
+    powers = similar(periods, float(eltype(y)))
+    durations = similar(periods, eltype(duration))
+    t0s = similar(periods)
     depths = similar(powers, eltype(y)) 
     snrs = similar(powers)
     loglikes = similar(powers)
 
     # find parameter ranges
-    max_P = maximum(period)
+    max_P = maximum(periods)
     min_τ = minimum(duration)
     bin_duration = min_τ / oversample
     max_bins = ceil(Int, max_P / bin_duration) + oversample
@@ -130,8 +130,8 @@ function BLS(t, y, yerr;
     end
 
     # loop over periods in grid search
-    @inbounds for idx in eachindex(period)
-        P = period[idx]
+    @inbounds for idx in eachindex(periods)
+        P = periods[idx]
         n_bins = ceil(Int, P / bin_duration) + oversample
         for n in 0:n_bins
             mean_y[begin + n] = zero(eltype(mean_y))
@@ -162,8 +162,7 @@ function BLS(t, y, yerr;
         best = -Inf
         for k in 0:length(duration) - 1
             τ = round(Int, duration[begin + k] / bin_duration)
-            n_max = n_bins - τ
-            for n in 0:n_max
+            for n in 0:n_bins - τ
                 # estimate in- and out-of-transit flux
                 y_in = mean_y[begin + n + τ] - mean_y[begin + n]
                 ivar_in = mean_ivar[begin + n + τ] - mean_ivar[begin + n]
@@ -182,6 +181,7 @@ function BLS(t, y, yerr;
                 depth_err = sqrt(inv(ivar_in) + inv(ivar_out))
                 snr = depth / depth_err
                 loglike = 0.5 * ivar_in * (y_out - y_in)^2
+                # @show loglike
 
                 if objective === :snr
                     power = snr
@@ -203,16 +203,16 @@ function BLS(t, y, yerr;
             end
         end
     end
-    return BLSPeriodogram(t, y, yerr, period, duration, objective, powers, durations, t0s, depths, snrs, loglikes)
+    return BLSPeriodogram(t, y, yerr, periods, duration, objective, powers, durations, t0s, depths, snrs, loglikes)
 end
 
-function model(bls::BLSPeriodogram)
+function model(bls::BLSPeriodogram; kwargs...)
     # compute depth
     pars = params(bls)
-    return model(bls.t, bls.y, bls.err; pars...)
+    return model(bls.t, bls.y, bls.err; pars..., kwargs...)
 end
 
-function model(t, y, yerr; period, duration, t0, kwargs...)
+function model(t, y, yerr=fill!(similar(y), one(eltype(y))); period, duration, t0, kwargs...)
     # compute depth
     hp = 0.5 * period
     y_in = y_out = zero(typeof(inv(first(y))))

@@ -4,16 +4,12 @@ Benchmarks against [astropy](https://github.com/astropy/astropy)
 
 ## setup
 
-1. (optional) instantiate python virtual environment
+1. install python dependencies using poetry
 ```
-$ python -m virtualenv venv
-$ source venv/bin/activate
+$ poetry install
+$ poetry shell
 ```
-2. install python dependencies
-```
-$ pip install -r bench/requirements.txt
-```
-3. instantiate julia environment and develop local project
+2. instantiate julia environment and develop local project
 ```
 $ julia --project=bench -e 'using Pkg; Pkg.instantiate(); Pkg.develop(path=pwd())'
 ```
@@ -23,7 +19,7 @@ pkg> activate bench
 pkg> instantiate
 pkg> dev .
 ```
-4. ensure PyCall.jl is linked to appropriate python
+3. ensure PyCall.jl is linked to appropriate python
 ```
 $ PYTHON=$(which python) julia --project=bench -e 'using Pkg; Pkg.build("PyCall")`
 ```
