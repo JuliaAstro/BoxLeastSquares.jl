@@ -1,5 +1,4 @@
 
-
 struct BLSPeriodogram{TT,FT,FET,PT,DT,VTT<:AbstractVector{TT},VFT<:AbstractVector{FT},VFET<:AbstractVector{FET},T1,T2,T3,T4,T5,T6}
     t::VTT
     y::VFT
@@ -111,8 +110,8 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
 
     # set up arrays
     powers = similar(periods, Float64)
-    durations = similar(periods, eltype(duration))
-    t0s = similar(periods)
+    durations = similar(powers, eltype(duration))
+    t0s = similar(powers, eltype(t))
     depths = similar(powers, eltype(y))
     snrs = similar(powers)
     loglikes = similar(powers)
