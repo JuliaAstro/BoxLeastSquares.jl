@@ -130,7 +130,7 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
 
     sum_y = zero(eltype(mean_y))
     sum_ivar = zero(eltype(mean_ivar))
-    for i in eachindex(y)
+    @inbounds for i in eachindex(y, yerr)
         iv = inv(yerr[i]^2)
         sum_y += (y[i] - ymed) * iv
         sum_ivar += iv
@@ -146,7 +146,7 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
         end
 
         for n in 0:length(t) - 1
-            ind = round(Int, wrap(t[begin + n] - min_t, P) / bin_duration) + 1
+            ind = floor(Int, wrap(t[begin + n] - min_t, P) / bin_duration) + 1
             iv = inv(yerr[begin + n]^2)
             mean_y[begin + ind] += (y[begin + n] - ymed) * iv
             mean_ivar[begin + ind] += iv
@@ -166,9 +166,9 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
         end
 
         # now, loop over phases
-        best = -Inf
-        for k in 0:length(duration) - 1
-            τ = round(Int, duration[begin + k] / bin_duration)
+        powers[idx] = -Inf
+        for dur in duration
+            τ = round(Int, dur / bin_duration)
             for n in 0:n_bins - τ
                 # estimate in- and out-of-transit flux
                 y_in = mean_y[begin + n + τ] - mean_y[begin + n]
@@ -176,19 +176,19 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
                 y_out = sum_y - y_in
                 ivar_out = sum_ivar - ivar_in
                 # check if no points in transit
-                if iszero(ivar_in) || iszero(ivar_out)
-                    continue
-                end
+                (iszero(ivar_in) || iszero(ivar_out)) &&  continue
                 # normalize
                 y_in /= ivar_in
                 y_out /= ivar_out
+                # check if negative SNR
+                y_out < y_in && continue
 
                 # compute best-fit depth
                 depth = y_out - y_in
                 depth_err = sqrt(inv(ivar_in) + inv(ivar_out))
+                # calculate objectives
                 snr = depth / depth_err
                 loglike = 0.5 * ivar_in * (y_out - y_in)^2
-                # @show loglike
 
                 if objective === :snr
                     power = snr
@@ -198,11 +198,10 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
                     error("invalid objective $objective. Should be one of `:snr` or `:likelihood`")
                 end
 
-                if power > best
-                    best = power
+                if power > powers[idx]
                     powers[idx] = power
                     durations[idx] = τ * bin_duration
-                    t0s[idx] = mod(n * bin_duration + 0.5 * durations[idx], P) + min_t
+                    t0s[idx] = mod(n * bin_duration + 0.5 * durations[idx] + min_t, P)
                     depths[idx] = depth
                     snrs[idx] = snr
                     loglikes[idx] = loglike
@@ -210,5 +209,7 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
             end
         end
     end
+
     return BLSPeriodogram(t, y, yerr, periods, duration, objective, powers, durations, t0s, depths, snrs, loglikes)
 end
+
