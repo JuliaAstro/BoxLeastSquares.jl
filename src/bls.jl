@@ -1,11 +1,39 @@
 
+"""
+    BLSPeriodogram
+
+A convenient wrapper for outputs from [`BLS`](@ref).
+
+# Methods
+* [`BoxLeastSquares.params`](@ref)
+* [`BoxLeastSquares.power`](@ref)
+* [`BoxLeastSquares.periods`](@ref)
+
+# Attributes
+* `t` - input time grid
+* `y` - input data
+* `yerr` - input data uncertainty
+* `periods` - the input periods
+* `duration_in` - the input durations
+* `objective` - the objective that was maximized
+* `power` - the power calculated at each period
+* `duration` - the best duration at each period
+* `t0` - the best transit time at each period
+* `depth` - the best transit depth at each period
+* `snr` - the signal-to-noise ratio at each period
+* `loglike` - the log-likeilhood at each period
+
+# Plotting
+
+Plotting recipes are provided for `BLSPeriodogram` which automatically plots the period and the power
+"""
 struct BLSPeriodogram{TT,FT,FET,PT,DT,VTT<:AbstractVector{TT},VFT<:AbstractVector{FT},VFET<:AbstractVector{FET},T1,T2,T3,T4,T5,T6}
     t::VTT
     y::VFT
-    err::VFET
-    period::PT
+    yerr::VFET
+    periods::PT
     duration_in::DT
-    method::Symbol
+    objective::Symbol
 
     power::T1
     duration::T2
@@ -15,52 +43,37 @@ struct BLSPeriodogram{TT,FT,FET,PT,DT,VTT<:AbstractVector{TT},VFT<:AbstractVecto
     loglike::T6
 end
 
-period(bls::BLSPeriodogram) = bls.period
-duration(bls::BLSPeriodogram) = bls.duration_in
+"""
+    BoxLeastSquares.periods(::BLSPeriodogram)
+
+Return the period grid for the periodogram
+"""
+periods(bls::BLSPeriodogram) = bls.periods
+"""
+    BoxLeastSquares.power(::BLSPeriodogram)
+
+Return the power calculated for each period for the periodogram
+"""
 power(bls::BLSPeriodogram) = bls.power
 
 """
     BoxLeastSquares.params(::BLSPeriodogram)
 
-Return the transit parameters for the best fitting period. Returns period, duration, t0, and power.
+Return the transit parameters for the best fitting period. Returns period, duration, t0, and power as well as the index of the max-power period.
 """
 function params(bls::BLSPeriodogram)
     ind = argmax(power(bls))
     pow = power(bls)[ind]
-    per = period(bls)[ind]
+    per = periods(bls)[ind]
     dur = bls.duration[ind]
     t0 = bls.t0[ind]
     depth = bls.depth[ind]
     snr = bls.snr[ind]
     depth_err = depth / snr
     loglike = bls.loglike[ind]
-    return (power=pow, period=per, duration=dur, t0=t0,
+    return (index=ind, power=pow, period=per, duration=dur, t0=t0,
             depth=depth, depth_err=depth_err, snr=snr, loglike=loglike)
 end
-
-function Base.show(io::IO, bls::BLSPeriodogram{T,S}) where {T,S}
-    N = length(bls.power)
-    print(io, "$N-element BLSPeriodogram{$T,$S}")
-end
-
-function Base.show(io::IO, ::MIME"text/plain", bls::BLSPeriodogram)
-    p = params(bls)
-    println(io, "BLSPeriodogram\n==============")
-    println(io, "input dim: ", length(bls.t))
-    println(io, "output dim: ", length(bls.power))
-    println(io, "period range: ", range_str(extrema(bls.period)))
-    println(io, "duration range: ", range_str(extrema(bls.duration_in)))
-    println(io, "objective: ", bls.method)
-    println(io, "\nparameters\n----------")
-    println(io, "period: ", p.period)
-    println(io, "duration: ", p.duration)
-    println(io, "t0: ", p.t0)
-    println(io, "depth: ", p.depth, " ± ", p.depth_err)
-    println(io, "snr: ", p.snr)
-    print(io, "log-likelihood: ", p.loglike)
-end
-
-range_str((min, max)) = "$min - $max"
 
 """
     autoperiod(t, duration;
@@ -100,13 +113,32 @@ end
 @inline wrap(x, period) = x - period * floor(x / period)
 
 """
-    BLS(t, y, [yerr]; duration, periods=autoperiod(t, duration), objective=:likelihood, oversample=10)
+    BLS(t, y, [yerr];
+        duration, periods=autoperiod(t, duration, kwargs...), 
+        objective=:likelihood, oversample=10, kwargs...)
+
+Compute the box-least-squares periodogram.
+
+# Parameters
+* `t` - the time for each observation. Units are irrelevant, except that they must be consistent for all temporal parameters (e.g., `duration`). `Unitful.jl` units work seamlessly without needing to convert.
+* `y` - the flux value for each observation
+* `yerr`, optional - the uncertainty for each observation, if not provided, will default to ones
+* `duration` - The duration or durations to consider. Same units as `t`
+* `periods`, optional - The period grid to computer the BLS power over. If not provided, [`autoperiod`](@ref) will be called along with any extra keyword arguments (like `minimum_period`)
+* `objective`, optional - Choose between maximizing the likeilhood (`:likeilhood`, default) or the signal-to-noise ratio (`:snr`).
+* `oversample`, optional - The number of bins per duration that should be used. Larger values of `oversample` will lead to a finer grid.
+
+The returned values are wrapped into a convenience type [`BoxLeastSquares.BLSPeriodogram`](@ref)
 """
 function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
     duration,
-    periods=autoperiod(t, duration),
+    periods=nothing,
     objective=:likelihood,
-    oversample=10)
+    oversample=10,
+    kwargs...)
+    if isnothing(periods)
+        periods = autoperiod(t, duration; kwargs...)
+    end
 
     # set up arrays
     powers = similar(periods, Float64)

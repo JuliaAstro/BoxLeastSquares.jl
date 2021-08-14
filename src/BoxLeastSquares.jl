@@ -8,5 +8,7 @@ export BLS, autoperiod
 include("bls.jl")
 # transit model
 include("model.jl")
+# pretty printing
+include("printing.jl")
 
 end

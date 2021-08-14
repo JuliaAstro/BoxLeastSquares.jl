@@ -65,7 +65,7 @@ end
         duration = 0.16u"d" |> u"hr"
 
         results = BLS(tu, y, dy; duration)
-        @test unit(eltype(results.period)) == u"d"
+        @test unit(eltype(results.periods)) == u"d"
         @test unit(eltype(results.t0)) == u"d"
         @test unit(eltype(results.duration)) == u"hr"
         @test unit(eltype(results.duration_in)) == u"hr"
@@ -88,7 +88,7 @@ end
         duration = 0.16u"d" |> u"hr"
 
         results = BLS(tu, yu, dyu; duration)
-        @test unit(eltype(results.period)) == u"d"
+        @test unit(eltype(results.periods)) == u"d"
         @test unit(eltype(results.t0)) == u"d"
         @test unit(eltype(results.duration)) == u"hr"
         @test unit(eltype(results.duration_in)) == u"hr"
