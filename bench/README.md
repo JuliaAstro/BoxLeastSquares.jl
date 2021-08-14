@@ -32,9 +32,11 @@ pkg> build PyCall
 
 ## usage
 
-To run the benchmark, first make sure you have appropriately linked the version of python you are using with PyCall, as shown in the setup above. Once PyCall is linked, simply activating the Julia environment and executing `benchmark.jl` will run the benchmark.
+To run the benchmark, first make sure you have appropriately linked the version of python you are using with PyCall, as shown in the setup above. Once PyCall is linked, simply activating the Julia environment and executing `benchmark.jl` will run the benchmark. For fair comparisons, make sure the number of threads used is the same for each language-
 
 ```
+$ export OMP_NUM_THREADS=1
+$ export JULIA_NUM_THREADS=1
 $ julia --project=bench bench/benchmark.jl
 ```
 or, from within the Julia REPL

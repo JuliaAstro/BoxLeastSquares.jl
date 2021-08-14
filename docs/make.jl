@@ -6,11 +6,11 @@ DocMeta.setdocmeta!(BoxLeastSquares, :DocTestSetup, :(using BoxLeastSquares); re
 makedocs(;
     modules=[BoxLeastSquares],
     authors="Miles Lucas <mdlucas@hawaii.edu> and contributors",
-    repo="https://github.com/mileslucas/BoxLeastSquares.jl/blob/{commit}{path}#{line}",
+    repo="https://github.com/JuliaAstro/BoxLeastSquares.jl/blob/{commit}{path}#{line}",
     sitename="BoxLeastSquares.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://mileslucas.github.io/BoxLeastSquares.jl",
+        canonical="https://JuliaAstro.github.io/BoxLeastSquares.jl",
         assets=String[],
     ),
     pages=[
@@ -19,6 +19,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/mileslucas/BoxLeastSquares.jl",
+    repo="github.com/JuliaAstro/BoxLeastSquares.jl",
     devbranch="main",
 )
