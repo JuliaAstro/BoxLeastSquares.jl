@@ -1,5 +1,5 @@
 """
-BoxLeastSquares.model(::BLSPeriodogram; kwargs...)
+    BoxLeastSquares.model(::BLSPeriodogram; kwargs...)
 
 Create a transit model using the data and best-fitting parameters from the given BLS periodogram. Any keyword parameters can be overriden.
 """
@@ -12,7 +12,7 @@ end
 """
     BoxLeastSquares.model(t, y, [yerr]; period, duration, t0)
 
-Evaluate the transit model on the given time grid. The following transit parameters must be set:
+Evaluate the transit model on the given time grid. If `yerr` is not provided, it will default to 1. The following transit parameters must be set:
 * `period` orbital period in the same units as `t`
 * `duration` the transit duration in the same units as `t`
 * `t0` the transit time (middle of transit) in the same units as `t`
