@@ -1,3 +1,5 @@
+using Unitful: unit
+
 
 function make_data(N=500)
     t = rand(rng, Uniform(0, 10), N)
@@ -18,9 +20,9 @@ end
     durations = params.duration .+ range(-0.1, 0.1, length=3)
 
     period = @inferred autoperiod(t, durations)
-    model1 = @inferred BLS(t, y, dy; duration=durations, periods=period)
-    model2 = @inferred BLS(t, y, dy; duration=durations)
-    @test BoxLeastSquares.power(model1) ≈ BoxLeastSquares.power(model2)
+    results1 = @inferred BLS(t, y, dy; duration=durations, periods=period)
+    results2 = @inferred BLS(t, y, dy; duration=durations)
+    @test BoxLeastSquares.power(results1) ≈ BoxLeastSquares.power(results2)
 
 end
 
@@ -29,8 +31,8 @@ end
 
     periods = exp.(range(log(params.period) - 0.1, log(params.period) + 0.1, length=1000))
 
-    model = @inferred BLS(t, y, dy; params.duration, periods, objective=obj)
-    best_params = BoxLeastSquares.params(model)
+    results = @inferred BLS(t, y, dy; params.duration, periods, objective=obj)
+    best_params = BoxLeastSquares.params(results)
 
     @test best_params.period ≈ params.period atol = 0.01
     @test best_params.t0 ≈ params.t0 atol = 0.01
@@ -53,5 +55,62 @@ end
     # model = @inferred BoxLeastSquares.model(t, y, dy; params...)
     model = BoxLeastSquares.model(t, y, dy; params...)
     @test model ≈ model_true
+end
+
+@testset "Unitful.jl integration" begin
+    @testset "time units" begin
+        t, y, dy, params = make_data()
+
+        tu = t * u"d"
+        duration = 0.16u"d" |> u"hr"
+
+        results = BLS(tu, y, dy; duration)
+        @test unit(eltype(results.period)) == u"d"
+        @test unit(eltype(results.t0)) == u"d"
+        @test unit(eltype(results.duration)) == u"hr"
+        @test unit(eltype(results.duration_in)) == u"hr"
+    end
+    @testset "flux units" begin
+        t, y, dy, params = make_data()
+
+        yu = y * u"J"
+        dyu = dy * u"J"
+
+        results = BLS(t, yu, dyu; params.duration)
+        @test unit(eltype(results.depth)) == u"J"
+    end
+    @testset "flux and time units" begin
+        t, y, dy, params = make_data()
+
+        tu = t * u"d"
+        yu = y * u"J"
+        dyu = dy * u"J"
+        duration = 0.16u"d" |> u"hr"
+
+        results = BLS(tu, yu, dyu; duration)
+        @test unit(eltype(results.period)) == u"d"
+        @test unit(eltype(results.t0)) == u"d"
+        @test unit(eltype(results.duration)) == u"hr"
+        @test unit(eltype(results.duration_in)) == u"hr"
+        @test unit(eltype(results.depth)) == u"J"
+    end
+end
+
+# @testset "Dates stdlib integration" begin
+#     t, y, dy, params = make_data()
+#     t = Dates.Day.(t)
+#     duration = Dates.Day(0.16)
+
+#     results = BLS(tu, yu, dyu; duration)
+#     print(results)
+#     dump(results)
+#     # @test unit(eltype(results.period)) == u"d"
+#     # @test unit(eltype(results.t0)) == u"d"
+#     # @test unit(eltype(results.duration)) == u"hr"
+#     # @test unit(eltype(results.duration_in)) == u"hr"
+# end
+
+@testset "AstroTime.jl stdlib integration" begin
+
 end
 

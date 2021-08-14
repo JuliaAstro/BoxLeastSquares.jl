@@ -110,7 +110,7 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
     oversample=10)
 
     # set up arrays
-    powers = similar(periods, float(eltype(y)))
+    powers = similar(periods, Float64)
     durations = similar(periods, eltype(duration))
     t0s = similar(periods)
     depths = similar(powers, eltype(y))
