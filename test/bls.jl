@@ -25,7 +25,7 @@ end
 end
 
 @testset "model correctness ($obj)" for obj in [:likelihood, :snr]
-    t, y, dy, params = make_data()
+    t, y, dy, params = make_data(1000)
 
     periods = exp.(range(log(params.period) - 0.1, log(params.period) + 0.1, length=1000))
 
