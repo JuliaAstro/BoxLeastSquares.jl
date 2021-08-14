@@ -1,20 +1,6 @@
 using Unitful: unit
 
 
-function make_data(N=500)
-    t = rand(rng, Uniform(0, 10), N)
-    dy = rand(rng, Uniform(0.005, 0.010), N)
-    period = 2.0
-    t0 = 0.5
-    duration = 0.16
-    depth = 0.2
-    mask = @. abs((t - t0 + 0.5 * period) % period - 0.5 * period) < 0.5 * duration
-    y = @. ifelse(mask, 1 - depth, 1)
-    y .+= dy .* randn(rng, N)
-    return t, y, dy, (;period, t0, duration, depth)
-end
-
-
 @testset "autoperiod self-consistency" begin
     t, y, dy, params = make_data()
     durations = params.duration .+ range(-0.1, 0.1, length=3)
