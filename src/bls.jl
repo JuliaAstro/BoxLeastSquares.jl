@@ -101,7 +101,7 @@ function BLS(t, y, yerr;
     period=autoperiod(t, duration))
 
     # set up arrays
-    powers = similar(period, Float64)
+    powers = similar(period, float(eltype(y)))
     durations = similar(period, eltype(duration))
     t0s = similar(period)
     depths = similar(powers, eltype(y)) 

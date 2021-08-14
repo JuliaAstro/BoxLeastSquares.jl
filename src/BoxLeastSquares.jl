@@ -4,6 +4,6 @@ using Statistics
 
 export BLS, autoperiod, params
 
-include("core.jl")
+include("bls.jl")
 
 end
