@@ -21,7 +21,7 @@ duration(bls::BLSPeriodogram) = bls.duration_in
 power(bls::BLSPeriodogram) = bls.power
 
 """
-    params(::BLSPeriodogram)
+    BoxLeastSquares.params(::BLSPeriodogram)
 
 Return the transit parameters for the best fitting period. Returns period, duration, t0, and power.
 """
@@ -63,7 +63,11 @@ end
 
 range_str((min, max)) = "$min - $max"
 
+"""
+    autoperiod(t, duration; minimum_n_transit=3, frequency_factor=1.0, [minimum_period, maximum_period])
 
+Automatically determine a period grid from the given times and duration(s). Periods are selected such that at least `minimum_n_trasnit` transits occur. The default minimum period is twice the maximum duration. The default maximum period is `(maximum(t) - minimum(t)) / (minimum_n_transit - 1)`. The frequency factor changes the granularity in frequency space- a smaller frequency factor will create a finer period grid.
+"""
 function autoperiod(t::AbstractVector{T},
                     duration;
                     minimum_n_transit=3,
@@ -94,11 +98,14 @@ end
 
 @inline wrap(x, period) = x - period * floor(x / period)
 
+"""
+    BLS(t, y, [yerr]; duration, periods=autoperiod(t, duration), objective=:likelihood, oversample=10)
+"""
 function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
     duration,
+    periods=autoperiod(t, duration),
     objective=:likelihood,
-    oversample=10,
-    periods=autoperiod(t, duration))
+    oversample=10)
 
     # set up arrays
     powers = similar(periods, float(eltype(y)))
@@ -204,37 +211,4 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
         end
     end
     return BLSPeriodogram(t, y, yerr, periods, duration, objective, powers, durations, t0s, depths, snrs, loglikes)
-end
-
-function model(bls::BLSPeriodogram; kwargs...)
-    # compute depth
-    pars = params(bls)
-    return model(bls.t, bls.y, bls.err; pars..., kwargs...)
-end
-
-function model(t, y, yerr=fill!(similar(y), one(eltype(y))); period, duration, t0, kwargs...)
-    # compute depth
-    hp = 0.5 * period
-    y_in = y_out = zero(typeof(inv(first(y))))
-    ivar_in = ivar_out = zero(typeof(inv(first(yerr)^2)))
-    for idx in eachindex(t, y, yerr)
-        transiting = abs((t[idx] - t0 + hp) % period - hp) < 0.5 * duration
-        iv = inv(yerr[idx]^2)
-        χ = y[idx] * iv
-        if transiting
-            y_in += χ
-            ivar_in += iv
-        else
-            y_out += χ
-            ivar_out += iv
-        end
-    end
-    y_in /= ivar_in
-    y_out /= ivar_out
-    T = eltype(y)
-    y_model = map(t) do t
-        transiting = abs((t - t0 + hp) % period - hp) < 0.5 * duration
-        convert(T, ifelse(transiting, y_in, y_out))
-    end
-    return y_model
 end
