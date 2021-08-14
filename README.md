@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/JuliaAstro/BoxLeastSquares.jl/workflows/CI/badge.svg?branch=main)](https://github.com/JuliaAstro/BoxLeastSquares.jl/actions)
 [![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/B/BoxLeastSquares.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html)
-[![Coverage](https://codecov.io/gh/JuliaAstro/BoxLeastSquares.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/BoxLeastSquares.jl)
+[![Coverage](https://codecov.io/gh/JuliaAstro/BoxLeastSquares.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/BoxLeastSquares.jl)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaAstro.github.io/BoxLeastSquares.jl/stable)
