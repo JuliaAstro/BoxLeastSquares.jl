@@ -95,22 +95,3 @@ end
         @test unit(eltype(results.depth)) == u"J"
     end
 end
-
-# @testset "Dates stdlib integration" begin
-#     t, y, dy, params = make_data()
-#     t = Dates.Day.(t)
-#     duration = Dates.Day(0.16)
-
-#     results = BLS(tu, yu, dyu; duration)
-#     print(results)
-#     dump(results)
-#     # @test unit(eltype(results.period)) == u"d"
-#     # @test unit(eltype(results.t0)) == u"d"
-#     # @test unit(eltype(results.duration)) == u"hr"
-#     # @test unit(eltype(results.duration_in)) == u"hr"
-# end
-
-@testset "AstroTime.jl stdlib integration" begin
-
-end
-
