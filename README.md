@@ -8,8 +8,7 @@
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaAstro.github.io/BoxLeastSquares.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaAstro.github.io/BoxLeastSquares.jl/dev)
 
-Box-least-squares (BLS) periodograms in pure Julia. 
-
+Box-least-squares (BLS) periodograms in pure Julia.
 
 ## Installation
 
@@ -18,6 +17,7 @@ To install use [Pkg](https://julialang.github.io/Pkg.jl/v1/managing-packages/). 
 ```julia
 pkg> add BoxLeastSquares
 ```
+
 If you want to use the most up-to-date version of the code, check it out from `main`
 
 ```julia
@@ -122,5 +122,5 @@ log-likelihood: 11186.069545672593
 ```
 
 ## Contributing and Support
- 
+
 If you would like to contribute, feel free to open a [pull request](https://github.com/JuliaAstro/BoxLeastSquares.jl/pulls). If you want to discuss something before contributing, head over to [discussions](https://github.com/JuliaAstro/BoxLeastSquares.jl/discussions) and join or open a new topic. If you're having problems with something, open an [issue](https://github.com/JuliaAstro/BoxLeastSquares.jl/issues).
