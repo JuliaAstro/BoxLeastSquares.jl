@@ -72,6 +72,7 @@ objective: likelihood
 
 parameters
 ----------
+index: 1633
 period: 1.99930396919953
 duration: 0.16
 t0: 0.5001330656464655
@@ -84,7 +85,7 @@ to extract the parameters in a convenient named tuple use [`BoxLeastSquares.para
 
 ```jldoctest usage
 julia> BoxLeastSquares.params(result)
-(power = 27396.365214805144, period = 1.99930396919953, duration = 0.16, t0 = 0.5001330656464655, depth = 0.19594118110109113, depth_err = 0.0008688097746093883, snr = 225.52828804117118, loglike = 27396.365214805144)
+(index = 1633, power = 27396.365214805144, period = 1.99930396919953, duration = 0.16, t0 = 0.5001330656464655, depth = 0.19594118110109113, depth_err = 0.0008688097746093883, snr = 225.52828804117118, loglike = 27396.365214805144)
 ```
 
 The period grid was automatically determined using [`autoperiod`](@ref), but you can supply your own, too:
@@ -103,6 +104,7 @@ objective: likelihood
 
 parameters
 ----------
+index: 379
 period: 0.668822856235621
 duration: 0.12
 t0: 0.49613306564646553
@@ -120,23 +122,43 @@ julia> using Unitful
 
 julia> tu = t * u"d";
 
-julia> results_units = BLS(tu, y, yerr; duration=(10:14)u"hr")
+julia> results_units = BLS(tu, y, yerr; duration=(2:0.1:4)u"hr")
 BLSPeriodogram
 ==============
 input dim: 1000
-output dim: 158
-period range: 1.1666666666666665 d - 5.010959571954422 d
-duration range: 10 hr - 14 hr
+output dim: 3343
+period range: 0.3333333333333333 d - 4.988348864592586 d
+duration range: 2.0 hr - 4.0 hr
 objective: likelihood
 
 parameters
 ----------
-period: 2.04681966153818 d
-duration: 10 hr
-t0: 0.3791330656464655 d
-depth: 0.0788086190813451 ± 0.0005822150269728557
-snr: 135.35998802899218
-log-likelihood: 11186.069545672593
+index: 2986
+period: 2.0019235780121827 d
+duration: 3.8000000000000003 hr
+t0: 0.4916330656464656 d
+depth: 0.19445716575012517 ± 0.0008692454825826517
+snr: 223.70799693127577
+log-likelihood: 26953.643422397385
+```
+
+### Plotting
+
+[`BoxLeastSquares.BLSPeriodogram`](@ref) has plotting shorthands built right in- by default it will plot the period grid and the computed power
+
+```@example usage
+using BoxLeastSquares, Unitful, StableRNGs # hide
+rng = StableRNG(3351) # hide
+t = 10 .* rand(rng, 1000)u"d" # hide
+yerr = 5e-3 .* (rand(rng, 1000) .+ 1) # hide
+P = 2u"d"; t0 = 0.5u"d"; dur = 0.16u"d"; depth = 0.2; # hide
+mask = @. abs((t - t0 + 0.5P) % P - 0.5P) < 0.5dur # hide
+y = @. ifelse(mask, 1.0 - depth, 1.0) # hide
+y .+= yerr .* randn(rng, 1000) # hide
+results_units = BLS(t, y, yerr; duration=(2:0.1:4)u"hr") # hide
+using Plots, UnitfulRecipes
+
+plot(results_units, label="")
 ```
 
 ## Contributing and Support
