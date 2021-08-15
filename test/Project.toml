@@ -1,5 +1,4 @@
 [deps]
-Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 StableRNGs = "860ef19b-820b-49d6-a774-d7a799459cd3"
@@ -7,7 +6,6 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
-Aqua = "0.5"
 Distributions = "0.25"
 RecipesBase = "1"
 StableRNGs = "1"
