@@ -1,3 +1,4 @@
+using Aqua
 using BoxLeastSquares
 using Distributions
 using StableRNGs
@@ -24,4 +25,8 @@ end
     include("bls.jl")
     include("plotting.jl")
     include("printing.jl")
+end
+
+@testset "Aqua tests" begin
+    Aqua.test_all(BoxLeastSquares)
 end
