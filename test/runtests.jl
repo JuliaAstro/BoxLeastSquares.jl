@@ -14,7 +14,7 @@ function make_data(N=500)
     duration = 0.16
     depth = 0.2
     mask = @. abs((t - t0 + 0.5 * period) % period - 0.5 * period) < 0.5 * duration
-    y = @. ifelse(mask, 1 - depth, 1)
+    y = @. ifelse(mask, 1.0 - depth, 1.0)
     y .+= dy .* randn(rng, N)
     return t, y, dy, (;period, t0, duration, depth)
 end
