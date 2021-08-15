@@ -38,9 +38,13 @@ end
     w = (A' * (A ./ dy .^2)) \ (A' * (y ./ dy .^2))
     model_true = A * w
 
-    # model = @inferred BoxLeastSquares.model(t, y, dy; params...)
-    model = BoxLeastSquares.model(t, y, dy; params...)
+    model = @inferred BoxLeastSquares.model(t, y, dy; params...)
     @test model ≈ model_true
+
+    # test interface
+    result = BLS(t, y, dy; params.duration)
+    model_direct = @inferred BoxLeastSquares.model(result; params...)
+    @test model ≈ model_direct
 end
 
 @testset "Unitful.jl integration" begin

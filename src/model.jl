@@ -6,7 +6,7 @@ Create a transit model using the data and best-fitting parameters from the given
 function model(bls::BLSPeriodogram; kwargs...)
     # compute depth
     pars = params(bls)
-    return model(bls.t, bls.y, bls.err; pars..., kwargs...)
+    return model(bls.t, bls.y, bls.yerr; pars..., kwargs...)
 end
 
 """
@@ -22,7 +22,7 @@ If you are using `Unitful.jl`, the unit conversions will be made automatically.
 function model(t, y, yerr=fill!(similar(y), one(eltype(y))); period, duration, t0, kwargs...)
     # compute depth
     hp = 0.5 * period
-    y_in = y_out = zero(typeof(inv(first(y))))
+    y_in = y_out = zero(typeof(first(y)))
     ivar_in = ivar_out = zero(typeof(inv(first(yerr)^2)))
     @inbounds for idx in eachindex(t, y, yerr)
         transiting = abs((t[idx] - t0 + hp) % period - hp) < 0.5 * duration
@@ -38,10 +38,10 @@ function model(t, y, yerr=fill!(similar(y), one(eltype(y))); period, duration, t
     end
     y_in /= ivar_in
     y_out /= ivar_out
-    T = eltype(y)
-    y_model = map(t) do t
-        transiting = abs((t - t0 + hp) % period - hp) < 0.5 * duration
-        convert(T, ifelse(transiting, y_in, y_out))
+    y_model = similar(y)
+    @inbounds for idx in eachindex(t)
+        transiting = abs((t[idx] - t0 + hp) % period - hp) < 0.5 * duration
+        y_model[idx] = ifelse(transiting, y_in, y_out)
     end
     return y_model
 end
