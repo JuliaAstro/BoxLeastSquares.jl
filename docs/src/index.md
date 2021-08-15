@@ -161,6 +161,20 @@ using Plots, UnitfulRecipes
 plot(results_units, label="")
 ```
 
+now let's look at how the transit model compares to the data
+
+```@example usage
+pars = BoxLeastSquares.params(results_units)
+wrap = 0.5 * pars.period
+phases = @. (mod(t - pars.t0 + wrap, pars.period) - wrap) / pars.period
+inds = sortperm(phases)
+model = BoxLeastSquares.model(results_units)
+
+scatter(phases[inds], y[inds], yerr=yerr[inds],
+    label="data", xlabel="phase", xlim=(-0.2, 0.2), leg=:bottomright)
+plot!(phases[inds], model[inds], lw=3, label="BLS model")
+```
+
 ## Contributing and Support
 
 If you would like to contribute, feel free to open a [pull request](https://github.com/JuliaAstro/BoxLeastSquares.jl/pulls). If you want to discuss something before contributing, head over to [discussions](https://github.com/JuliaAstro/BoxLeastSquares.jl/discussions) and join or open a new topic. If you're having problems with something, open an [issue](https://github.com/JuliaAstro/BoxLeastSquares.jl/issues).
