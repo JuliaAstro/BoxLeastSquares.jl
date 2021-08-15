@@ -62,4 +62,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
-          GKSwtype: "100" # fix GKS socket error for plots in @example blocks
+          GKSwstype: "100" # fix GKS socket error for plots made in @example blocks
