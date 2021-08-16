@@ -175,6 +175,51 @@ scatter(phases[inds], y[inds], yerr=yerr[inds],
 plot!(phases[inds], model[inds], lw=3, label="BLS model")
 ```
 
+## Performance
+
+This code has been benchmarked against the C implementation in [`astropy.timeseries.bls`](https://github.com/astropy/astropy). The C version uses OpenMP to multi-thread some parts of the core BLS algorithm, but BoxLeastSquares.jl has no threading support currently. For a fair comparison, we set `OMP_NUM_THREADS` to 1 for the following tests.
+
+This first benchmark is simply the time it takes to evaluate the BLS periodogram. Periods are pre-computed using [`autoperiod`](@ref). We simulate different sizes of data sets (x-axis) as well as different sizes of period grids (shape). This benchmark does not use units. The code can be found in `bench/benchmark.jl`. Here is the information for my system-
+
+```julia
+Julia Version 1.6.0
+Commit f9720dc2eb* (2021-03-24 12:55 UTC)
+Platform Info:
+  OS: macOS (x86_64-apple-darwin20.3.0)
+  CPU: Intel(R) Core(TM) i5-8259U CPU @ 2.30GHz
+  WORD_SIZE: 64
+  LIBM: libopenlibm
+  LLVM: libLLVM-11.0.1 (ORCJIT, skylake)
+Environment:
+  OMP_NUM_THREADS = 1
+  JULIA_NUM_THREADS = 1
+```
+
+```@example
+using CSV, DataFrames, Plots # hide
+using BoxLeastSquares # hide
+benchdir = joinpath(dirname(pathof(BoxLeastSquares)), "..", "bench") # hide
+results = DataFrame(CSV.File(joinpath(benchdir, "benchmark_results.csv"))) # hide
+groups = groupby(results, :N_per) # hide
+
+plot(xlabel="# data points", ylabel="time (s)") # hide
+
+# plot main curves # hide
+shapes = [:o :dtriangle :diamond] # hide
+for (g, shape) in zip(groups, shapes) # hide
+    plot!(g.N_data, [g.t_astropy g.t_bls]; c=[1 2], shape, label="") # hide
+end # hide
+plot!(xscale=:log10, yscale=:log10) # hide
+# create faux-legends # hide
+bbox_ = bbox(0, 0, 1, 1, :bottom, :left) # hide
+plot!([1 2]; c=[1 2], label=["astropy" "BoxLeastSquares.jl"], inset=(1, bbox_), # hide
+    bg=:transparent, border=:none, axes=false, sp=2, leg=:topleft, bgcolorlegend=:white) # hide
+npers = hcat((string(k.N_per) for k in keys(groups))...) # hide
+scatter!([0 0 0]; shape=shapes, c=:black, alpha=0.4, label=npers, inset=(1, bbox_), # hide
+    bg=:transparent, border=:none, axes=false, sp=3, ylim=(1, 2), # hide
+    legtitle="# periods", leg=:bottomright, legendtitlefontsize=9, bgcolorlegend=:white) # hide
+```
+
 ## Contributing and Support
 
 If you would like to contribute, feel free to open a [pull request](https://github.com/JuliaAstro/BoxLeastSquares.jl/pulls). If you want to discuss something before contributing, head over to [discussions](https://github.com/JuliaAstro/BoxLeastSquares.jl/discussions) and join or open a new topic. If you're having problems with something, open an [issue](https://github.com/JuliaAstro/BoxLeastSquares.jl/issues).
