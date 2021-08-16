@@ -91,31 +91,31 @@ julia> BoxLeastSquares.params(result)
 The period grid was automatically determined using [`autoperiod`](@ref), but you can supply your own, too:
 
 ```jldoctest usage
-julia> periods = range(log(2) - 0.1, log(2) + 0.1, length=1000);
+julia> periods = exp.(range(log(2) - 0.1, log(2) + 0.1, length=1000));
 
-julia> result_fine = BLS(t, y, yerr; duration=0.12:0.20, periods=periods)
+julia> result_fine = BLS(t, y, yerr; duration=0.12:0.01:0.20, periods=periods)
 BLSPeriodogram
 ==============
 input dim: 1000
 output dim: 1000
-period range: 0.5931471805599453 - 0.7931471805599453
-duration range: 0.12 - 0.12
+period range: 1.809674836071919 - 2.210341836151295
+duration range: 0.12 - 0.2
 objective: likelihood
 
 parameters
 ----------
-index: 379
-period: 0.668822856235621
-duration: 0.12
-t0: 0.49613306564646553
-depth: 0.06949975333493467 ± 0.0005991935962031148
-snr: 115.98881192210811
-log-likelihood: 8087.810929044984
+index: 503
+period: 2.001001251543549
+duration: 0.168
+t0: 0.4961330656464656
+depth: 0.19466955969052016 ± 0.0008627202098527317
+snr: 225.64622628204188
+log-likelihood: 27457.6383039924
 ```
 
 ### Unitful.jl
 
-BoxLeastSquares.jl is fully compatible with the `Unitful.jl` (although it is not a dependency of the library). For example
+BoxLeastSquares.jl is fully compatible with `Unitful.jl` (although it is not a dependency of the library). For example
 
 ```jldoctest usage
 julia> using Unitful

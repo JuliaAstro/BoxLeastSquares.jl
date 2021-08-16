@@ -71,54 +71,56 @@ julia> BoxLeastSquares.params(result)
 
 The period grid was automatically determined using `autoperiod`, but you can supply your own, too:
 
-```julia
-julia> periods = range(log(2) - 0.1, log(2) + 0.1, length=1000);
+```jldoctest usage
+julia> periods = exp.(range(log(2) - 0.1, log(2) + 0.1, length=1000));
 
-julia> result_fine = BLS(t, y, yerr; duration=0.12:0.20, periods=periods)
+julia> result_fine = BLS(t, y, yerr; duration=0.12:0.01:0.20, periods=periods)
 BLSPeriodogram
 ==============
 input dim: 1000
 output dim: 1000
-period range: 0.5931471805599453 - 0.7931471805599453
-duration range: 0.12 - 0.12
+period range: 1.809674836071919 - 2.210341836151295
+duration range: 0.12 - 0.2
 objective: likelihood
 
 parameters
 ----------
-period: 0.668822856235621
-duration: 0.12
-t0: 0.49613306564646553
-depth: 0.06949975333493467 ± 0.0005991935962031148
-snr: 115.98881192210811
-log-likelihood: 8087.810929044984
+index: 503
+period: 2.001001251543549
+duration: 0.168
+t0: 0.4961330656464656
+depth: 0.19466955969052016 ± 0.0008627202098527317
+snr: 225.64622628204188
+log-likelihood: 27457.6383039924
 ```
 
 ### Unitful.jl
 
-BoxLeastSquares.jl is fully compatible with the `Unitful.jl` (although it is not a dependency of the library). For example
+BoxLeastSquares.jl is fully compatible with `Unitful.jl` (although it is not a dependency of the library). For example
 
-```julia
+```jldoctest usage
 julia> using Unitful
 
 julia> tu = t * u"d";
 
-julia> results_units = BLS(tu, y, yerr; duration=(10:14)u"hr")
+julia> results_units = BLS(tu, y, yerr; duration=(2:0.1:4)u"hr")
 BLSPeriodogram
 ==============
 input dim: 1000
-output dim: 158
-period range: 1.1666666666666665 d - 5.010959571954422 d
-duration range: 10 hr - 14 hr
+output dim: 3343
+period range: 0.3333333333333333 d - 4.988348864592586 d
+duration range: 2.0 hr - 4.0 hr
 objective: likelihood
 
 parameters
 ----------
-period: 2.04681966153818 d
-duration: 10 hr
-t0: 0.3791330656464655 d
-depth: 0.0788086190813451 ± 0.0005822150269728557
-snr: 135.35998802899218
-log-likelihood: 11186.069545672593
+index: 2986
+period: 2.0019235780121827 d
+duration: 3.8000000000000003 hr
+t0: 0.4916330656464656 d
+depth: 0.19445716575012517 ± 0.0008692454825826517
+snr: 223.70799693127577
+log-likelihood: 26953.643422397385
 ```
 
 ## Contributing and Support
