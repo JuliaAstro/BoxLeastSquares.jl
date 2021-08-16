@@ -113,6 +113,15 @@ end
 
 @inline wrap(x, period) = x - period * trunc(x / period)
 
+@inline function wrap_index(t::Real, min_t, P, bin_duration)
+    unsafe_trunc(Int, wrap(t - min_t, P) / bin_duration) + 1
+end
+# this method will catch e.g. AbstractQuantity <: Number
+# which is important because unsafe_trunc not defined
+@inline function wrap_index(t, min_t, P, bin_duration)
+    trunc(Int, wrap(t - min_t, P) / bin_duration) + 1
+end
+
 """
     BLS(t, y, [yerr];
         duration, periods=autoperiod(t, duration, kwargs...), 
@@ -181,7 +190,7 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
         end
 
         @turbo for idx in eachindex(t, y, yerr)
-            ind = unsafe_trunc(Int, wrap(t[idx] - min_t, P) / bin_duration) + 1
+            ind = wrap_index(t[idx], min_t, P, bin_duration)
             iv = inv(yerr[idx]^2)
             mean_y[_begin + ind] += (y[idx] - ymed) * iv
             mean_ivar[_begin + ind] += iv
