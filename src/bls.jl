@@ -157,7 +157,7 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
     # work arrays
     mean_y = similar(y, typeof(inv(first(y))), max_bins + 1)
     mean_ivar = similar(yerr, typeof(inv(first(yerr)^2)), max_bins + 1)
-    beg = firstindex(mean_y)
+    _begin = firstindex(mean_y) # need this because @turbo can't use implicit begin
 
     # pre-accumulate some factors
     ymed = median(y)
@@ -176,28 +176,28 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
         P = periods[idx]
         n_bins = ceil(Int, P / bin_duration) + oversample
         @turbo for n in 0:n_bins
-            mean_y[beg + n] = zero(eltype(mean_y))
-            mean_ivar[beg + n] = zero(eltype(mean_ivar))
+            mean_y[_begin + n] = zero(eltype(mean_y))
+            mean_ivar[_begin + n] = zero(eltype(mean_ivar))
         end
 
         @turbo for idx in eachindex(t, y, yerr)
             ind = unsafe_trunc(Int, wrap(t[idx] - min_t, P) / bin_duration) + 1
             iv = inv(yerr[idx]^2)
-            mean_y[beg + ind] += (y[idx] - ymed) * iv
-            mean_ivar[beg + ind] += iv
+            mean_y[_begin + ind] += (y[idx] - ymed) * iv
+            mean_ivar[_begin + ind] += iv
         end
 
         # simplify calcualations by wrapping binned values
         ind = n_bins - oversample
         for n in 1:oversample
-            mean_y[beg + ind] = mean_y[beg + n]
-            mean_ivar[beg + ind] = mean_ivar[beg + n]
+            mean_y[begin + ind] = mean_y[begin + n]
+            mean_ivar[begin + ind] = mean_ivar[begin + n]
             ind += 1
         end
 
         for n in 1:n_bins
-            mean_y[beg + n] += mean_y[beg + n - 1]
-            mean_ivar[beg + n] += mean_ivar[beg + n - 1]
+            mean_y[begin + n] += mean_y[begin + n - 1]
+            mean_ivar[begin + n] += mean_ivar[begin + n - 1]
         end
 
         # now, loop over phases
@@ -206,8 +206,8 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
             τ = round(Int, dur / bin_duration)
             for n in 0:n_bins - τ
                 # estimate in- and out-of-transit flux
-                y_in = mean_y[beg + n + τ] - mean_y[beg + n]
-                ivar_in = mean_ivar[beg + n + τ] - mean_ivar[beg + n]
+                y_in = mean_y[begin + n + τ] - mean_y[begin + n]
+                ivar_in = mean_ivar[begin + n + τ] - mean_ivar[begin + n]
                 y_out = sum_y - y_in
                 ivar_out = sum_ivar - ivar_in
                 # check if no points in transit
