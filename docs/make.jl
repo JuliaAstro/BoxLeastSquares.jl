@@ -21,5 +21,6 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/JuliaAstro/BoxLeastSquares.jl",
+    push_preview=true,
     devbranch="main",
 )
