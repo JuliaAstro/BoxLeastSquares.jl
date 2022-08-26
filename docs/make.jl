@@ -2,7 +2,7 @@ using BoxLeastSquares
 using Documenter
 
 DocMeta.setdocmeta!(BoxLeastSquares, :DocTestSetup, :(using BoxLeastSquares); recursive=true)
-
+include("pages.jl")
 makedocs(;
     modules=[BoxLeastSquares],
     authors="Miles Lucas <mdlucas@hawaii.edu> and contributors",
@@ -13,10 +13,7 @@ makedocs(;
         canonical="https://JuliaAstro.github.io/BoxLeastSquares.jl",
         assets=String[],
     ),
-    pages=[
-        "Home" => "index.md",
-        "API/Reference" => "api.md"
-    ],
+    pages=pages
 )
 
 deploydocs(;
