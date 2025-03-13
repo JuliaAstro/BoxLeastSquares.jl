@@ -198,8 +198,8 @@ Environment:
 ```@example
 using CSV, DataFrames, Plots # hide
 using BoxLeastSquares # hide
-benchdir = joinpath(dirname(pathof(BoxLeastSquares)), "..", "bench") # hide
-results = DataFrame(CSV.File(joinpath(benchdir, "benchmark_results.csv"))) # hide
+benchdir = joinpath(pkgdir(BoxLeastSquares), "bench") # hide
+results = CSV.read(joinpath(benchdir, "benchmark_results.csv"), DataFrame) # hide
 groups = groupby(results, :N_per) # hide
 
 plot(xlabel="# data points", ylabel="time (s)") # hide
