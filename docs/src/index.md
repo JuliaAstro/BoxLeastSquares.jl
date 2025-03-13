@@ -15,12 +15,12 @@ CurrentModule = BoxLeastSquares
 
 To install use [Pkg](https://julialang.github.io/Pkg.jl/v1/managing-packages/). From the REPL, press `]` to enter Pkg-mode
 
-```julia
+```julia-repl
 pkg> add BoxLeastSquares
 ```
 If you want to use the most up-to-date version of the code, check it out from `main`
 
-```julia
+```julia-repl
 pkg> add BoxLeastSquares#main
 ```
 
@@ -34,7 +34,7 @@ julia> using BoxLeastSquares
 
 you can optionally alias the package name, too
 
-```julia
+```julia-repl
 julia> import BoxLeastSquares as BLS
 ```
 
@@ -181,7 +181,7 @@ This code has been benchmarked against the C implementation in [`astropy.timeser
 
 This first benchmark is simply the time it takes to evaluate the BLS periodogram. Periods are pre-computed using [`autoperiod`](@ref). We simulate different sizes of data sets (x-axis) as well as different sizes of period grids (shape). This benchmark does not use units. The code can be found in `bench/benchmark.jl`. Here is the information for my system-
 
-```julia
+```plain
 Julia Version 1.6.0
 Commit f9720dc2eb* (2021-03-24 12:55 UTC)
 Platform Info:
