@@ -55,8 +55,14 @@ jobs:
         with:
           version: '1'
       - uses: julia-actions/julia-buildpkg@v1
-      - run: julia --color=yes -e 'using Pkg; Pkg.add("Aqua")'
-      - run: julia --color=yes --project=@. -e 'using Aqua, BoxLeastSquares; Aqua.test_all(BoxLeastSquares; ambiguities=false)'
+      - shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.add("Aqua")
+      - shell: julia --color=yes --project=@. {0}
+        run: |
+          using Aqua, BoxLeastSquares
+          Aqua.test_all(BoxLeastSquares; ambiguities=false)
   docs:
     name: Documentation
     runs-on: ubuntu-latest
@@ -65,12 +71,8 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
-      - run: |
-          julia --project=docs -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()'
-      - run: julia --project=docs docs/make.jl
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-docdeploy@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
