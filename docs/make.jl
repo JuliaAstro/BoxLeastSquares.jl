@@ -12,6 +12,7 @@ makedocs(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://JuliaAstro.github.io/BoxLeastSquares.jl",
         assets=String[],
+        canonical = "https://JuliaAstro.org/AstroImages/stable/",
     ),
     pages=pages
 )
@@ -20,4 +21,5 @@ deploydocs(;
     repo="github.com/JuliaAstro/BoxLeastSquares.jl",
     push_preview=true,
     devbranch="main",
+    versions = ["stable" => "v^", "v#.#"], # Restrict to minor releases
 )
