@@ -48,7 +48,7 @@ DocTestSetup = quote
     yerr = 5e-3 .* (rand(rng, 1000) .+ 1)
     P = 2; t0 = 0.5; dur = 0.16; depth = 0.2;
     mask = @. abs((t - t0 + 0.5P) % P - 0.5P) < 0.5dur;
-    y = @. ifelse(mask, 1 - depth, 1);
+    y = @. ifelse(mask, 1.0 - depth, 1.0);
     y .+= yerr .* randn(rng, 1000)
     load_data() = t, y, yerr
 end
@@ -76,16 +76,16 @@ index: 1633
 period: 1.99930396919953
 duration: 0.16
 t0: 0.5001330656464655
-depth: 0.19594118110109113 ± 0.0008688097746093883
-snr: 225.52828804117118
-log-likelihood: 27396.365214805144
+depth: 0.19568837562219213 ± 0.0008736119232682481
+snr: 223.99920423488172
+log-likelihood: 27001.3673142461
 ```
 
 to extract the parameters in a convenient named tuple use [`BoxLeastSquares.params`](@ref)
 
 ```jldoctest usage
 julia> BoxLeastSquares.params(result)
-(index = 1633, power = 27396.365214805144, period = 1.99930396919953, duration = 0.16, t0 = 0.5001330656464655, depth = 0.19594118110109113, depth_err = 0.0008688097746093883, snr = 225.52828804117118, loglike = 27396.365214805144)
+(index = 1633, power = 27001.3673142461, period = 1.99930396919953, duration = 0.16, t0 = 0.5001330656464655, depth = 0.19568837562219213, depth_err = 0.0008736119232682481, snr = 223.99920423488172, loglike = 27001.3673142461)
 ```
 
 The period grid was automatically determined using [`autoperiod`](@ref), but you can supply your own, too:
@@ -141,6 +141,9 @@ depth: 0.19445716575012517 ± 0.0008692454825826517
 snr: 223.70799693127577
 log-likelihood: 26953.643422397385
 ```
+
+!!! warning
+    For unitful quantities, the internal LoopVectorization call to `@turbo` currently falls back to an `@inbounds @fastmath` loop. We suppress this warning by default.
 
 ### Plotting
 
