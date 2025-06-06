@@ -189,7 +189,7 @@ function BLS(t, y, yerr=fill!(similar(y), one(eltype(y)));
             mean_ivar[_begin + n] = zero(eltype(mean_ivar))
         end
 
-        @turbo for idx in eachindex(t, y, yerr)
+        @turbo warn_check_args=false for idx in eachindex(t, y, yerr)
             ind = wrap_index(t[idx], min_t, P, bin_duration)
             iv = inv(yerr[idx]^2)
             mean_y[_begin + ind] += (y[idx] - ymed) * iv
