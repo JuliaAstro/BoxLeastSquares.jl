@@ -142,6 +142,9 @@ snr: 223.70799693127577
 log-likelihood: 26953.643422397385
 ```
 
+!!! warning
+    For unitful quantities, the internal LoopVectorization call to `@turbo` currently falls back to an `@inbounds @fastmath` loop. We suppress this warning by default.
+
 ### Plotting
 
 [`BoxLeastSquares.BLSPeriodogram`](@ref) has plotting shorthands built right in- by default it will plot the period grid and the computed power
